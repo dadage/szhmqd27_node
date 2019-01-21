@@ -20,8 +20,13 @@ app.use(bodyParser.json())
 app.use(express.static(path.join(__dirname,'public')))
 
 // 导入路由对象
+// 登录注册路由
 const accountRouter=require(path.join(__dirname,"routers/accountRouter.js"))
 app.use('/account',accountRouter);
+// 用户界面路由
+const studentRouter=require(path.join(__dirname,"routers/studentRouter.js"))
+app.use('/student',studentRouter);
+
 //启动
 app.listen(3000,'127.0.0.1',err=>{
     if(err){

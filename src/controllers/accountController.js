@@ -1,8 +1,9 @@
 const path = require('path');
-const MongoClient = require('mongodb').MongoClient;
-const url = 'mongodb://localhost:27017';
-const dbName = 'szhm27q';
+// const MongoClient = require('mongodb').MongoClient;
+// const url = 'mongodb://localhost:27017';
+// const dbName = 'szhm27q';
 const captchapng = require('captchapng');
+const databasetools=require(path.join(__dirname,'../tools/databasetools'))
 
 
 exports.getRegisterPage = (req, res) => {
@@ -17,40 +18,22 @@ exports.register = (req, res) => {
         status:0,
         message:"注册成功"
     }
-    MongoClient.connect(url,{ useNewUrlParser: true } ,function (err, client) {
-        const db = client.db(dbName);
-        //    获取mongo数据集合
-        const collection = db.collection('accountInfo');
-
-        // 检查是否存在用户
-        collection.findOne(
-            {username},
-            function(err,doc){
-                if(doc){
-                    result.status=1;
-                    result.message="该用户已经被注册";
-                    res.json(result);
-                    client.close();
-                    
-                }else {
-                    // 增加一个用户
-                    collection.insertOne(
-                        req.body,
-                        function(err,result2){
-                            if(result2){
-                                res.json(result2);
-                                client.close();
-                            }else{
-                                alert('注册失败');
-                                client.close();
-                            }
-                        }
-                    )
+    databasetools.findOne('accountInfo',{username},(err,doc)=>{
+        if(doc){
+            result.status=1;
+            result.message="该用户已经被注册";
+            res.json(result);
+        }else {
+            // 增加一个用户
+            databasetools.insertOne('accountInfo',req.body,(err,result2)=>{
+                if(result2){
+                    res.json(result2);
+                }else{
+                    alert('注册失败');
                 }
-            }
-        )
-       
-    });
+            })
+        }
+    })
 }
 
 exports.getLoginPage=(req,res)=>{
@@ -65,7 +48,7 @@ exports.getVcodeImage=(req,res)=>{
         p.color(80, 80, 80, 255); // Second color: paint (red, green, blue, alpha)
  
         const img = p.getBase64();
-        const imgbase64 = new Buffer(img,'base64');
+        const imgbase64 =Buffer.from(img,'base64');
         res.writeHead(200, {
             'Content-Type': 'image/png'
         });
@@ -84,31 +67,23 @@ exports.login=(req,res)=>{
         result.message="验证码错误";
         res.json(result);
     }else {
-        MongoClient.connect(url, function(err, client) {
-       
-            const db = client.db(dbName);
-           
-            const collection = db.collection('accountInfo');
-            collection.findOne({username},(err,doc)=>{
-                if(doc){
-                    if(doc.password==password){
-                        client.close();
-                        res.json(result);
-                        
-                    }else {
-                        result.status=3;
-                        result.message="密码错误，请重新输入";
-                        client.close();
-                        res.json(result);
-                    }
-                }else{
-                    result.status=2;
-                    result.message="您还未注册，请注册后登录";
+
+        databasetools.findOne('accountInfo',{username},(err,doc)=>{
+            if(doc){
+                if(doc.password==password){
                     res.json(result);
-                    client.close();
+                    
+                }else {
+                    result.status=3;
+                    result.message="密码错误，请重新输入";
+                    res.json(result);
                 }
-            })
-          });
+            }else{
+                result.status=2;
+                result.message="您还未注册，请注册后登录";
+                res.json(result);
+            }
+        })
     }
     
     
